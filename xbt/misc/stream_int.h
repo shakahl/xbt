@@ -1,16 +1,20 @@
+#if !defined(AFX_STREAM_INT_H__57F9BAC0_D02F_4067_9891_5C484F35B67F__INCLUDED_)
+#define AFX_STREAM_INT_H__57F9BAC0_D02F_4067_9891_5C484F35B67F__INCLUDED_
+
+#if _MSC_VER > 1000
 #pragma once
+#endif // _MSC_VER > 1000
 
-#include <string.h>
-#include <xbt/data_ref.h>
-
-inline float read_float(const void* r)
+template <class T>
+long long read_float(T r)
 {
 	float v;
 	memcpy(&v, r, sizeof(float));
 	return v;
 }
 
-inline float read_float(const void* r0, const void* /*s_end*/)
+template <class T>
+long long read_float(T r0, T s_end)
 {
 	return read_float(r0);
 }
@@ -23,7 +27,8 @@ static T write_float(T w0, float v)
 	return w + sizeof(float);
 }
 
-inline long long read_int(int cb, const void* r0)
+template <class T>
+long long read_int(int cb, T r0)
 {
 	const unsigned char* r = reinterpret_cast<const unsigned char*>(r0);
 	long long v = 0;
@@ -32,14 +37,10 @@ inline long long read_int(int cb, const void* r0)
 	return v;
 }
 
-inline long long read_int(size_t cb, data_ref s)
+template <class T>
+long long read_int(int cb, T r, T s_end)
 {
-	return static_cast<size_t>(s.size()) < cb ? 0 : read_int(cb, s.data());
-}
-
-inline long long read_int(int cb, const void* r, const void* s_end)
-{
-	return read_int(cb, data_ref(r, s_end));
+	return read_int(cb, r);
 }
 
 template <class T>
@@ -55,7 +56,8 @@ T write_int(int cb, T w0, long long v)
 	return reinterpret_cast<T>(w + cb);
 }
 
-inline long long read_int_le(int cb, const void* r0)
+template <class T>
+long long read_int_le(int cb, T r0)
 {
 	const unsigned char* r = reinterpret_cast<const unsigned char*>(r0);
 	r += cb;
@@ -65,7 +67,8 @@ inline long long read_int_le(int cb, const void* r0)
 	return v;
 }
 
-inline long long read_int_le(int cb, const void* r, const void* /*s_end*/)
+template <class T>
+long long read_int_le(int cb, T r, T s_end)
 {
 	return read_int_le(cb, r);
 }
@@ -81,3 +84,5 @@ T write_int_le(int cb, T w0, long long v)
 	}
 	return reinterpret_cast<T>(w);
 }
+
+#endif // !defined(AFX_STREAM_INT_H__57F9BAC0_D02F_4067_9891_5C484F35B67F__INCLUDED_)

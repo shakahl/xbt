@@ -1,11 +1,8 @@
-#include <stdafx.h>
+#include "stdafx.h"
 #include "bvalue.h"
 
-#include <boost/foreach.hpp>
-#include <cstdio>
-#include <string.h>
-#include <xbt/bt_misc.h>
-#include <xbt/find_ptr.h>
+#include "bt_misc.h"
+#include "xcc_z.h"
 
 Cbvalue::Cbvalue(long long v)
 {
@@ -20,7 +17,7 @@ Cbvalue::Cbvalue(t_value_type t)
 	case vt_int:
 		break;
 	case vt_string:
-		m_string = new std::string;
+		m_string = new string;
 		break;
 	case vt_list:
 		m_list = new t_list;
@@ -33,10 +30,10 @@ Cbvalue::Cbvalue(t_value_type t)
 	}
 }
 
-Cbvalue::Cbvalue(const std::string& v)
+Cbvalue::Cbvalue(const string& v)
 {
 	m_value_type = vt_string;
-	m_string = new std::string(v);
+	m_string = new string(v);
 }
 
 Cbvalue::Cbvalue(const Cbvalue& v)
@@ -47,7 +44,7 @@ Cbvalue::Cbvalue(const Cbvalue& v)
 		m_int = v.m_int;
 		break;
 	case vt_string:
-		m_string = new std::string(*v.m_string);
+		m_string = new string(*v.m_string);
 		break;
 	case vt_list:
 		m_list = new t_list(*v.m_list);
@@ -60,10 +57,17 @@ Cbvalue::Cbvalue(const Cbvalue& v)
 	}
 }
 
-Cbvalue::Cbvalue(data_ref s)
+Cbvalue::Cbvalue(const void* s, int cb_s)
 {
 	m_value_type = vt_int;
-	if (write(s))
+	if (write(s, cb_s))
+		clear();
+}
+
+Cbvalue::Cbvalue(const Cvirtual_binary& v)
+{
+	m_value_type = vt_int;
+	if (write(v))
 		clear();
 }
 
@@ -82,7 +86,7 @@ const Cbvalue& Cbvalue::operator=(const Cbvalue& v)
 		m_int = v.m_int;
 		break;
 	case vt_string:
-		m_string = new std::string(*v.m_string);
+		m_string = new string(*v.m_string);
 		break;
 	case vt_list:
 		m_list = new t_list(*v.m_list);
@@ -96,14 +100,21 @@ const Cbvalue& Cbvalue::operator=(const Cbvalue& v)
 	return *this;
 }
 
-int Cbvalue::write(str_ref s)
+int Cbvalue::write(const Cvirtual_binary& v)
 {
-	return write(s.data(), s.size());
+	return write(v, v.size());
+}
+
+int Cbvalue::write(const void* s, int cb_s)
+{
+	return write(reinterpret_cast<const char*>(s), cb_s);
 }
 
 int Cbvalue::write(const char* s, int cb_s)
 {
-	return write(s, s + cb_s);
+	return cb_s >= 10 && s[0] == 0x1f && s[1] == -0x75 && s[2] == 8
+		? write(xcc_z::gunzip(s, cb_s))
+		: write(s, s + cb_s);
 }
 
 int Cbvalue::write(const char*& s, const char* s_end)
@@ -133,7 +144,7 @@ int Cbvalue::write(const char*& s, const char* s_end)
 			if (s + l > s_end)
 				return 1;
 			m_value_type = vt_string;
-			m_string = new std::string(s, l);
+			m_string = new string(s, l);
 			s += l;
 			return 0;
 		}
@@ -213,20 +224,21 @@ const Cbvalue::t_map& Cbvalue::d() const
 	return m_value_type == vt_dictionary ? *m_map : z;
 }
 
-bool Cbvalue::d_has(const std::string& v) const
+bool Cbvalue::d_has(const string& v) const
 {
-	return m_value_type == vt_dictionary && m_map->count(v);
+	return m_value_type == vt_dictionary && m_map->find(v) != m_map->end();
 }
 
-const Cbvalue& Cbvalue::d(const std::string& v) const
+const Cbvalue& Cbvalue::d(const string& v) const
 {
+	if (m_value_type == vt_dictionary)
+	{
+		t_map::const_iterator i = m_map->find(v);
+		if (i != m_map->end())
+			return i->second;
+	}
 	static Cbvalue z;
-	return m_value_type == vt_dictionary ? find_ref(*m_map, v, z) : z;
-}
-
-const Cbvalue& Cbvalue::operator[](const std::string& v) const
-{
-	return d(v);
+	return z;
 }
 
 long long Cbvalue::i() const
@@ -240,13 +252,13 @@ const Cbvalue::t_list& Cbvalue::l() const
 	return m_value_type == vt_list ? *m_list : z;
 }
 
-const std::string& Cbvalue::s() const
+const string& Cbvalue::s() const
 {
-	static std::string z;
+	static string z;
 	return m_value_type == vt_string ? *m_string : z;
 }
 
-Cbvalue& Cbvalue::d(const std::string& v, const Cbvalue& w)
+Cbvalue& Cbvalue::d(const string& v, const Cbvalue& w)
 {
 	if (m_value_type != vt_dictionary)
 	{
@@ -281,15 +293,15 @@ int Cbvalue::pre_read() const
 	case vt_list:
 		{
 			int v = 2;
-			BOOST_FOREACH(auto& i, *m_list)
-				v += i.pre_read();
+			for (t_list::const_iterator i = m_list->begin(); i != m_list->end(); i++)
+				v += i->pre_read();
 			return v;
 		}
 	case vt_dictionary:
 		{
 			int v = 2;
-			BOOST_FOREACH(auto& i, *m_map)
-				v += n(i.first.size()).size() + i.first.size() + i.second.pre_read() + 1;
+			for (t_map::const_iterator i = m_map->begin(); i != m_map->end(); i++)
+				v += n(i->first.size()).size() + i->first.size() + i->second.pre_read() + 1;
 			return v;
 		}
 	}
@@ -297,10 +309,11 @@ int Cbvalue::pre_read() const
 	return 0;
 }
 
-shared_data Cbvalue::read() const
+Cvirtual_binary Cbvalue::read() const
 {
-	shared_data d(pre_read());
-  BOOST_VERIFY(read(d.data()) == d.size());
+	Cvirtual_binary d;
+	int cb_d = read(d.write_start(pre_read()));
+	assert(cb_d == d.size());
 	return d;
 }
 
@@ -324,11 +337,7 @@ int Cbvalue::read(char* d) const
 		*w++ = 'e';
 		return w - d;
 	case vt_string:
-#ifdef WIN32
 		sprintf(w, "%d:", m_string->size());
-#else
-		sprintf(w, "%zu:", m_string->size());
-#endif
 		w += n(m_string->size()).size() + 1;
 		memcpy(w, m_string->data(), m_string->size());
 		w += m_string->size();
@@ -336,25 +345,21 @@ int Cbvalue::read(char* d) const
 	case vt_list:
 		{
 			*w++ = 'l';
-			BOOST_FOREACH(auto& i, *m_list)
-				w += i.read(w);
+			for (t_list::const_iterator i = m_list->begin(); i != m_list->end(); i++)
+				w += i->read(w);
 			*w++ = 'e';
 			return w - d;
 		}
 	case vt_dictionary:
 		{
 			*w++ = 'd';
-			BOOST_FOREACH(auto& i, *m_map)
+			for (t_map::const_iterator i = m_map->begin(); i != m_map->end(); i++)
 			{
-#ifdef WIN32
-				sprintf(w, "%d:", i.first.size());
-#else
-				sprintf(w, "%zu:", i.first.size());
-#endif
-				w += n(i.first.size()).size() + 1;
-				memcpy(w, i.first.data(), i.first.size());
-				w += i.first.size();
-				w += i.second.read(w);
+				sprintf(w, "%d:", i->first.size());
+				w += n(i->first.size()).size() + 1;
+				memcpy(w, i->first.data(), i->first.size());
+				w += i->first.size();
+				w += i->second.read(w);
 			}
 			*w++ = 'e';
 			return w - d;

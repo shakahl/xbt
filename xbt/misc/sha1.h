@@ -17,9 +17,26 @@
 #ifndef _SHA1_H_
 #define _SHA1_H_
 
-#include <stdint.h>
 #include <string>
-#include <xbt/data_ref.h>
+#include "virtual_binary.h"
+
+using namespace std;
+
+#if defined(BSD) || defined(WIN32)
+typedef unsigned int uint32_t;
+typedef int int_least16_t;
+typedef unsigned char uint8_t;
+#endif
+
+/*
+ * If you do not have the ISO standard stdint.h header file, then you
+ * must typdef the following:
+ *    name              meaning
+ *  uint32_t         unsigned 32 bit integer
+ *  uint8_t          unsigned 8 bit integer (i.e., unsigned char)
+ *  int_least16_t    integer of >= 16 bits
+ *
+ */
 
 #ifndef _SHA_enum_
 #define _SHA_enum_
@@ -67,10 +84,10 @@ class Csha1
 {
 public:
 	void read(void*);
-	std::string read();
-	void write(data_ref);
+	string read();
+	void write(const_memory_range);
 	Csha1();
-	Csha1(data_ref);
+	Csha1(const_memory_range);
 private:
 	SHA1Context m_context;
 };

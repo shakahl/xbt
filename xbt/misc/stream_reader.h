@@ -1,27 +1,32 @@
-#pragma once
+#if !defined(AFX_STREAM_READER_H__FC96F4EB_360D_4836_9D31_2C0D0D0377A8__INCLUDED_)
+#define AFX_STREAM_READER_H__FC96F4EB_360D_4836_9D31_2C0D0D0377A8__INCLUDED_
 
-#include <stream_int.h>
-#include <xbt/virtual_binary.h>
+#if _MSC_VER > 1000
+#pragma once
+#endif // _MSC_VER > 1000
+
+#include "stream_int.h"
+#include "virtual_binary.h"
 
 class Cstream_reader
 {
 public:
-	const unsigned char* d() const
+	const byte* d() const
 	{
 		return m_d;
 	}
 
-	const unsigned char* d_end() const
+	const byte* d_end() const
 	{
-		return m_d.end();
+		return m_d.data_end();
 	}
 
-	const unsigned char* r() const
+	const byte* r() const
 	{
 		return m_r;
 	}
 
-	const unsigned char* read(int size)
+	const byte* read(int size)
 	{
 		m_r += size;
 		return m_r - size;
@@ -36,13 +41,13 @@ public:
 	Cvirtual_binary read_data()
 	{
 		int l = read_int(4);
-		return Cvirtual_binary(data_ref(read(l), l));
+		return Cvirtual_binary(read(l), l);
 	}
 
-	std::string read_string()
+	string read_string()
 	{
 		int l = read_int(4);
-		return std::string(reinterpret_cast<const char*>(read(l)), l);
+		return string(reinterpret_cast<const char*>(read(l)), l);
 	}
 
 	Cstream_reader()
@@ -55,5 +60,7 @@ public:
 	}
 private:
 	Cvirtual_binary m_d;
-	const unsigned char* m_r;
+	const byte* m_r;
 };
+
+#endif // !defined(AFX_STREAM_READER_H__FC96F4EB_360D_4836_9D31_2C0D0D0377A8__INCLUDED_)

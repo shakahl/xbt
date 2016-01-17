@@ -1,36 +1,49 @@
+#if !defined(AFX_STDAFX_H__442CF508_B879_4863_8154_1014EBBD78CA__INCLUDED_)
+#define AFX_STDAFX_H__442CF508_B879_4863_8154_1014EBBD78CA__INCLUDED_
+
+#if _MSC_VER > 1000
 #pragma once
+#pragma warning(disable: 4800)
+#endif // _MSC_VER > 1000
 
-#define FD_SETSIZE 1024
-#define NOMINMAX
-
-#include <array>
-#include <boost/format.hpp>
-#include <boost/ptr_container/ptr_container.hpp>
-#include <boost/utility.hpp>
 #include <cassert>
-#include <cerrno>
-#include <csignal>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
 #include <ctime>
 #include <fstream>
 #include <iostream>
 #include <list>
 #include <map>
 #include <set>
-#include <sha1.h>
-#include <socket.h>
-#include <sstream>
-#include <stream_int.h>
 #include <string>
-#include <sys/stat.h>
 #include <vector>
-#include <xbt/bt_misc.h>
-#include <xbt/database.h>
-#include <xbt/find_ptr.h>
-#include <xbt/sql_query.h>
-#include <xbt/to_array.h>
-#include <xbt/xcc_z.h>
 
-typedef unsigned char byte;
+using namespace std;
+
+#ifdef WIN32
+#define FD_SETSIZE 1024
+#define NOMINMAX
+
+#include <windows.h>
+
+#define atoll _atoi64
+#else
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <cstdio>
+#include <errno.h>
+#include <signal.h>
+#include <unistd.h>
+
+#ifdef BSD
+#define atoll xbt_atoll
+#endif
+#endif
+#include "bvalue.h"
+#include "socket.h"
+#include "virtual_binary.h"
+
+//{{AFX_INSERT_LOCATION}}
+
+#endif // !defined(AFX_STDAFX_H__442CF508_B879_4863_8154_1014EBBD78CA__INCLUDED_)

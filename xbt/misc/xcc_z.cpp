@@ -1,36 +1,48 @@
-#include "xbt/xcc_z.h"
+#include "stdafx.h"
+#include "xcc_z.h"
 
 #include <cstdio>
-#include <string.h>
 #include <zlib.h>
 #include "stream_int.h"
 
-shared_data xcc_z::gunzip(data_ref s)
+Cvirtual_binary xcc_z::gunzip(const void* s0, int cb_s)
 {
-	if (s.size() < 18)
-		return shared_data();
-	shared_data d(read_int_le(4, s.end() - 4));
+	const byte* s = reinterpret_cast<const byte*>(s0);
+	if (cb_s < 18)
+		return Cvirtual_binary();
+	Cvirtual_binary d;
 	z_stream stream;
 	stream.zalloc = NULL;
 	stream.zfree = NULL;
 	stream.opaque = NULL;
-	stream.next_in = const_cast<unsigned char*>(s.begin()) + 10;
-	stream.avail_in = s.size() - 18;
-	stream.next_out = d.data();
+	stream.next_in = const_cast<byte*>(s) + 10;
+	stream.avail_in = cb_s - 18;
+	stream.next_out = d.write_start(read_int_le(4, s + cb_s - 4));
 	stream.avail_out = d.size();
 	return stream.next_out
 		&& Z_OK == inflateInit2(&stream, -MAX_WBITS)
 		&& Z_STREAM_END == inflate(&stream, Z_FINISH)
 		&& Z_OK == inflateEnd(&stream)
 		? d 
-		: shared_data();
+		: Cvirtual_binary();
 }
 
-shared_data xcc_z::gzip(data_ref s)
+Cvirtual_binary xcc_z::gunzip(const string& v)
 {
-	unsigned long cb_d = s.size() + (s.size() + 999) / 1000 + 12;
-	shared_data d(10 + cb_d + 8);
-	unsigned char* w = d.data();
+	return gunzip(reinterpret_cast<const byte*>(v.data()), v.length());
+}
+
+Cvirtual_binary xcc_z::gunzip(const Cvirtual_binary& s)
+{
+	return gunzip(s, s.size());
+}
+
+Cvirtual_binary xcc_z::gzip(const void* s0, int cb_s)
+{
+	const byte* s = reinterpret_cast<const byte*>(s0);
+	Cvirtual_binary d;
+	unsigned long cb_d = cb_s + (cb_s + 999) / 1000 + 12;
+	byte* w = d.write_start(10 + cb_d + 8);
 	*w++ = 0x1f;
 	*w++ = 0x8b;
 	*w++ = Z_DEFLATED;
@@ -47,24 +59,43 @@ shared_data xcc_z::gzip(data_ref s)
 		stream.zfree = NULL;
 		stream.opaque = NULL;
 		deflateInit2(&stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, -MAX_WBITS, MAX_MEM_LEVEL, Z_DEFAULT_STRATEGY);
-		stream.next_in = const_cast<unsigned char*>(s.begin());
-		stream.avail_in = s.size();
+		stream.next_in = const_cast<byte*>(s);
+		stream.avail_in = cb_s;
 		stream.next_out = w;
 		stream.avail_out = cb_d;
 		deflate(&stream, Z_FINISH);
 		deflateEnd(&stream);
 		w = stream.next_out;
 	}
-	w = write_int_le(4, w, crc32(crc32(0, NULL, 0), s.data(), s.size()));
-	w = write_int_le(4, w, s.size());
-	return d.substr(0, w - d.data());
+	w = write_int_le(4, w, crc32(crc32(0, NULL, 0), s, cb_s));
+	w = write_int_le(4, w, cb_s);
+	d.size(w - d.data());
+	return d;
 }
 
-/*
-void xcc_z::gzip_out(data_ref s)
+Cvirtual_binary xcc_z::gzip(const string& v)
+{
+	return gzip(reinterpret_cast<const byte*>(v.data()), v.length());
+}
+
+Cvirtual_binary xcc_z::gzip(const Cvirtual_binary& s)
+{
+	return gzip(s, s.size());
+}
+
+void xcc_z::gzip_out(const void* s, int cb_s)
 {
 	gzFile f = gzdopen(fileno(stdout), "wb");
-	gzwrite(f, s.data(), s.size());
+	gzwrite(f, const_cast<void*>(s), cb_s);
 	gzflush(f, Z_FINISH);
 }
-*/
+
+void xcc_z::gzip_out(const string& v)
+{
+	gzip_out(v.data(), v.length());
+}
+
+void xcc_z::gzip_out(const Cvirtual_binary& s)
+{
+	gzip_out(s, s.size());
+}

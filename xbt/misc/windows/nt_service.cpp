@@ -1,6 +1,5 @@
+#include "stdafx.h"
 #include "nt_service.h"
-
-#include <windows.h>
 
 int nt_service_install(const char* name)
 {

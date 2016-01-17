@@ -1,129 +1,277 @@
+#if !defined(AFX_SERVER_H__B9726CD5_D101_4193_A555_69102FC058E9__INCLUDED_)
+#define AFX_SERVER_H__B9726CD5_D101_4193_A555_69102FC058E9__INCLUDED_
+
+#if _MSC_VER > 1000
 #pragma once
+#endif // _MSC_VER > 1000
 
+#include "sql/database.h"
 #include "config.h"
+#include "connection.h"
+#include "epoll.h"
+#include "peer_link.h"
+#include "stats.h"
+#include "tcp_listen_socket.h"
 #include "tracker_input.h"
+#include "udp_listen_socket.h"
 
-class Cstats
+class Cserver
 {
 public:
-	long long announced() const
+	struct t_peer
 	{
-		return announced_http + announced_udp;
+		t_peer()
+		{
+			listening = false;
+			mtime = 0;
+		}
+
+		long long downloaded;
+		long long left;
+		string peer_id;
+		int port;
+		int uid;
+		long long uploaded;
+
+		bool listening;
+		time_t mtime;
+	};
+
+	typedef map<int, t_peer> t_peers;
+
+	class Cannounce_output
+	{
+	public:
+		virtual void peer(int h, const t_peer&) = 0;
+
+		void complete(int v)
+		{
+			m_complete = v;
+		}
+
+		void incomplete(int v)
+		{
+			m_incomplete = v;
+		}
+
+		void interval(int v)
+		{
+			m_interval = v;
+		}
+
+		Cannounce_output()
+		{
+			m_complete = 0;
+			m_incomplete = 0;
+			m_interval = 1800;
+		}
+	protected:
+		int m_complete;
+		int m_incomplete;
+		int m_interval;
+	};
+
+	struct t_deny_from_host
+	{
+		unsigned int end;
+		bool marked;
+	};
+
+	struct t_file
+	{
+		void clean_up(time_t t, Cserver&);
+		string debug() const;
+		void select_peers(const Ctracker_input&, Cannounce_output&) const;
+		Cbvalue scrape() const;
+
+		t_file()
+		{
+			completed = 0;
+			dirty = true;
+			fid = 0;
+			leechers = 0;
+			seeders = 0;
+		}
+
+		t_peers peers;
+		int completed;
+		bool dirty;
+		bool freetorrent;
+		int fid;
+		int leechers;
+		int seeders;
+		time_t ctime;
+		long long balance;
+	};
+
+
+	struct t_user
+	{
+		t_user()
+		{
+			completes = 0;
+			incompletes = 0;
+		}
+
+		bool can_leech;
+		bool marked;
+		int uid;
+		int completes;
+		int incompletes;
+		int peers_limit;
+		int torrents_limit;
+		int wait_time;
+		string pass;
+		long long torrent_pass_secret;
+	};
+
+	typedef map<string, t_file> t_files;
+	typedef map<unsigned int, t_deny_from_host> t_deny_from_hosts;
+	typedef map<int, t_user> t_users;
+	typedef map<string, t_user*> t_users_names;
+	typedef map<string, t_user*> t_users_torrent_passes;
+
+	int test_sql();
+	void accept(const Csocket& l);
+	t_user* find_user_by_name(const string&);
+	t_user* find_user_by_torrent_pass(const string&);
+	t_user* find_user_by_uid(int);
+	void read_config();
+	void write_db_files();
+	void write_db_users();
+	void read_db_deny_from_hosts();
+	void read_db_files();
+	void read_db_files_sql();
+	void read_db_users();
+	void clean_up();
+	string insert_peer(const Ctracker_input&, bool listen_check, bool udp, t_user*);
+	void update_peer(const string& file_id, int peer_id, bool listening);
+	string debug(const Ctracker_input&) const;
+	string statistics() const;
+	Cbvalue select_peers(const Ctracker_input&, const t_user*);
+	Cbvalue scrape(const Ctracker_input&);
+	int run();
+	static void term();
+	Cserver(Cdatabase&, const string& table_prefix, bool use_sql);
+
+	int announce_interval() const
+	{
+		return m_config.m_announce_interval;
 	}
 
-	long long scraped() const
+	const t_file* file(const string& id) const
 	{
-		return scraped_http + scraped_udp;
+		t_files::const_iterator i = m_files.find(id);
+		return i == m_files.end() ? NULL : &i->second;
 	}
 
-	long long accept_errors = 0;
-	long long accepted_tcp = 0;
-	long long announced_http = 0;
-	long long announced_udp = 0;
-	long long received_udp = 0;
-	long long rejected_tcp = 0;
-	long long scraped_full = 0;
-	long long scraped_http = 0;
-	long long scraped_multi = 0;
-	long long scraped_udp = 0;
-	long long sent_udp = 0;
-	long long slow_tcp = 0;
-	time_t start_time = time(NULL);
+	bool anonymous_connect() const
+	{
+		return m_config.m_anonymous_connect;
+	}
+
+	bool anonymous_announce() const
+	{
+		return m_config.m_anonymous_announce;
+	}
+
+	bool anonymous_scrape() const
+	{
+		return m_config.m_anonymous_scrape;
+	}
+
+	bool debug() const
+	{
+		return m_config.m_debug;
+	}
+
+	bool gzip_announce() const
+	{
+		return m_config.m_gzip_announce;
+	}
+
+	bool gzip_debug() const
+	{
+		return m_config.m_gzip_debug;
+	}
+
+	bool gzip_scrape() const
+	{
+		return m_config.m_gzip_scrape;
+	}
+
+	const string& redirect_url() const
+	{
+		return m_config.m_redirect_url;
+	}
+
+	long long secret() const
+	{
+		return m_secret;
+	}
+
+	Cstats& stats()
+	{
+		return m_stats;
+	}
+
+	time_t time() const
+	{
+		return m_time;
+	}
+private:
+	enum
+	{
+		column_files_completed,
+		column_files_fid,
+		column_files_leechers,
+		column_files_seeders,
+		column_users_uid,
+		table_announce_log,
+		table_config,
+		table_deny_from_hosts,
+		table_files,
+		table_files_users,
+		table_scrape_log,
+		table_users,
+	};
+
+	typedef list<Cconnection> t_connections;
+	typedef list<Cpeer_link> t_peer_links;
+	typedef list<Ctcp_listen_socket> t_tcp_sockets;
+	typedef list<Cudp_listen_socket> t_udp_sockets;
+
+	static void sig_handler(int v);
+	string column_name(int v) const;
+	string table_name(int) const;
+
+	Cconfig m_config;
+	Cstats m_stats;
+	bool m_use_sql;
+	time_t m_clean_up_time;
+	time_t m_read_config_time;
+	time_t m_read_db_deny_from_hosts_time;
+	time_t m_read_db_files_time;
+	time_t m_read_db_users_time;
+	time_t m_time;
+	time_t m_write_db_files_time;
+	time_t m_write_db_users_time;
+	int m_fid_end;
+	long long m_secret;
+	t_connections m_connections;
+	t_peer_links m_peer_links;
+	Cdatabase& m_database;
+	Cepoll m_epoll;
+	t_deny_from_hosts m_deny_from_hosts;
+	t_files m_files;
+	t_users m_users;
+	t_users_names m_users_names;
+	t_users_torrent_passes m_users_torrent_passes;
+	string m_announce_log_buffer;
+	string m_files_users_updates_buffer;
+	string m_scrape_log_buffer;
+	string m_table_prefix;
+	string m_users_updates_buffer;
 };
 
-class peer_key_c
-{
-public:
-	peer_key_c(int host, int uid)
-	{
-		host_ = host;
-#ifdef PEERS_KEY
-		uid_ = uid;
-#else
-		(void)uid;
-#endif
-	}
-
-	bool operator==(peer_key_c v) const
-	{
-#ifdef PEERS_KEY
-		return host_ == v.host_ && uid_ == v.uid_;
-#else
-		return host_ == v.host_;
-#endif
-	}
-
-	bool operator<(peer_key_c v) const
-	{
-#ifdef PEERS_KEY
-		return host_ < v.host_ || host_ == v.host_ && uid_ < v.uid_;
-#else
-		return host_ < v.host_;
-#endif
-	}
-
-	friend std::size_t hash_value(const peer_key_c& v)
-	{
-		std::size_t seed = boost::hash_value(v.host_);
-#ifdef PEERS_KEY
-		boost::hash_combine(seed, v.uid_);
-#endif
-		return seed;
-	}
-
-	int host_;
-#ifdef PEERS_KEY
-	int uid_;
-#endif
-};
-
-struct t_peer
-{
-	long long downloaded;
-	long long uploaded;
-	time_t mtime = 0;
-	int uid;
-	short port;
-	bool left;
-	std::array<char, 20> peer_id;
-};
-
-struct t_torrent
-{
-	void select_peers(mutable_str_ref& d, const Ctracker_input&) const;
-
-	boost::unordered_map<peer_key_c, t_peer> peers;
-	time_t ctime;
-	int completed = 0;
-	int fid = 0;
-	int leechers = 0;
-	int seeders = 0;
-	bool dirty = true;
-};
-
-struct t_user
-{
-	int uid;
-	int peers_limit = 0;
-	int torrent_pass_version = 0;
-	int wait_time = 0;
-	bool can_leech = true;
-	bool marked;
-};
-
-const t_torrent* find_torrent(const std::string& id);
-t_user* find_user_by_torrent_pass(str_ref, str_ref info_hash);
-t_user* find_user_by_uid(int v);
-long long srv_secret();
-const Cconfig& srv_config();
-Cdatabase& srv_database();
-Cstats& srv_stats();
-time_t srv_time();
-
-int srv_run(const std::string& table_prefix, bool use_sql, const std::string& conf_file);
-void srv_term();
-std::string srv_debug(const Ctracker_input&);
-std::string srv_insert_peer(const Ctracker_input&, bool udp, t_user*);
-std::string srv_scrape(const Ctracker_input&, t_user*);
-std::string srv_select_peers(const Ctracker_input&);
-std::string srv_statistics();
+#endif // !defined(AFX_SERVER_H__B9726CD5_D101_4193_A555_69102FC058E9__INCLUDED_)

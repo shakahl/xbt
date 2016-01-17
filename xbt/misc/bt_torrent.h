@@ -1,4 +1,9 @@
+#if !defined(AFX_BT_TORRENT_H__AF87B246_788C_42B3_BE1C_08679DFEFBA4__INCLUDED_)
+#define AFX_BT_TORRENT_H__AF87B246_788C_42B3_BE1C_08679DFEFBA4__INCLUDED_
+
+#if _MSC_VER > 1000
 #pragma once
+#endif // _MSC_VER > 1000
 
 #include "bvalue.h"
 
@@ -8,7 +13,7 @@ public:
 	class Cfile
 	{
 	public:
-		const std::string& name() const
+		const string& name() const
 		{
 			return m_name;
 		}
@@ -22,18 +27,18 @@ public:
 		{
 		}
 
-		Cfile(const std::string& name, long long size)
+		Cfile(const string& name, long long size)
 		{
 			m_name = name;
 			m_size = size;
 		}
 	private:
-		std::string m_name;
+		string m_name;
 		long long m_size;
 	};
 
-	typedef std::vector<std::string> t_announces;
-	typedef std::vector<Cfile> t_files;
+	typedef vector<string> t_announces;
+	typedef vector<Cfile> t_files;
 
 	long long size() const;
 	bool valid() const;
@@ -42,7 +47,7 @@ public:
 	Cbt_torrent();
 	Cbt_torrent(const Cbvalue&);
 
-	const std::string& announce() const
+	const string& announce() const
 	{
 		return m_announce;
 	}
@@ -57,7 +62,7 @@ public:
 		return m_files;
 	}
 
-	const std::string& name() const
+	const string& name() const
 	{
 		return m_name;
 	}
@@ -67,9 +72,11 @@ public:
 		return m_piece_size;
 	}
 private:
-	std::string m_announce;
+	string m_announce;
 	t_announces m_announces;
 	t_files m_files;
-	std::string m_name;
+	string m_name;
 	int m_piece_size;
 };
+
+#endif // !defined(AFX_BT_TORRENT_H__AF87B246_788C_42B3_BE1C_08679DFEFBA4__INCLUDED_)

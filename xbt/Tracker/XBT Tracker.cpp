@@ -1,9 +1,9 @@
 #include "stdafx.h"
-#include <windows/nt_service.h>
+#include "windows/nt_service.h"
 #include "config.h"
 #include "server.h"
 
-std::string g_conf_file = "xbt_tracker.conf";
+string g_conf_file = "xbt_tracker.conf";
 const char* g_service_name = "XBT Tracker";
 
 int main1()
@@ -20,29 +20,21 @@ int main1()
 			strrchr(b, '\\')[1] = 0;
 		strcat(b, "xbt_tracker.conf");
 		if (config.load(b))
-			std::cerr << "Unable to read " << g_conf_file << std::endl;
-		else
-			g_conf_file = b;
+			cerr << "Unable to read " << g_conf_file << endl;
 	}
 #else
-		std::cerr << "Unable to read " << g_conf_file << std::endl;
+		cerr << "Unable to read " << g_conf_file << endl;
 #endif
-	try
+	Cdatabase database;
+	Cxcc_error error;
+	if (config.m_mysql_host != "-"
+		&& (error = database.open(config.m_mysql_host, config.m_mysql_user, config.m_mysql_password, config.m_mysql_database, true)))
 	{
-		if (config.m_mysql_host != "-")
-			srv_database().open(config.m_mysql_host, config.m_mysql_user, config.m_mysql_password, config.m_mysql_database, true);
-	}
-	catch (bad_query& e)
-	{
-		std::cerr << e.what() << std::endl;
+		cerr << error.message() << endl;
 		return 1;
 	}
-	if (!config.m_query_log.empty())
-	{
-		static std::ofstream os(config.m_query_log.c_str());
-		srv_database().set_query_log(&os);
-	}
-	return srv_run(config.m_mysql_table_prefix, config.m_mysql_host != "-", g_conf_file);
+	database.set_query_log(config.m_query_log);
+	return Cserver(database, config.m_mysql_table_prefix, config.m_mysql_host != "-").run();
 }
 
 #ifdef WIN32
@@ -56,7 +48,7 @@ void WINAPI nt_service_handler(DWORD op)
 	case SERVICE_CONTROL_STOP:
 		g_service_status.dwCurrentState = SERVICE_STOP_PENDING;
 		SetServiceStatus(gh_service_status, &g_service_status);
-		srv_term();
+		Cserver::term();
 		break;
 	}
 	SetServiceStatus(gh_service_status, &g_service_status);
@@ -90,21 +82,15 @@ int main(int argc, char* argv[])
 		if (!strcmp(argv[1], "--install"))
 		{
 			if (nt_service_install(g_service_name))
-			{
-				std::cerr << "Failed to install service " << g_service_name << "." << std::endl;
-				return 1;
-			}
-			std::cout << "Service " << g_service_name << " has been installed." << std::endl;
+				return cerr << "Failed to install service " << g_service_name << "." << endl, 1;
+			cout << "Service " << g_service_name << " has been installed." << endl;
 			return 0;
 		}
 		else if (!strcmp(argv[1], "--uninstall"))
 		{
 			if (nt_service_uninstall(g_service_name))
-			{
-				std::cerr << "Failed to uninstall service " << g_service_name << "." << std::endl;
-				return 1;
-			}
-			std::cout << "Service " << g_service_name << " has been uninstalled." << std::endl;
+				return cerr << "Failed to uninstall service " << g_service_name << "." << endl, 1;
+			cout << "Service " << g_service_name << " has been uninstalled." << endl;
 			return 0;
 		}
 		else if (!strcmp(argv[1], "--conf_file") && argc >= 3)
@@ -124,17 +110,6 @@ int main(int argc, char* argv[])
 		&& GetLastError() != ERROR_FAILED_SERVICE_CONTROLLER_CONNECT)
 		return 1;
 #endif
-#else
-	if (argc >= 2)
-	{
-		if (!strcmp(argv[1], "--conf_file") && argc >= 3)
-			g_conf_file = argv[2];
-		else
-		{
-			std::cerr << "  --conf_file arg (=xbt_tracker.conf)" << std::endl;
-			return 1;
-		}
-	}
 #endif
 	return main1();
 }

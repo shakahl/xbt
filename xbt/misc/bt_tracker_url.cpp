@@ -3,11 +3,13 @@
 
 #include <boost/algorithm/string.hpp>
 
+using namespace boost;
+
 Cbt_tracker_url::Cbt_tracker_url()
 {
 }
 
-Cbt_tracker_url::Cbt_tracker_url(const std::string& v)
+Cbt_tracker_url::Cbt_tracker_url(const string& v)
 {
 	write(v);
 }
@@ -34,19 +36,19 @@ bool Cbt_tracker_url::valid() const
 	return false;
 }
 
-void Cbt_tracker_url::write(const std::string& v)
+void Cbt_tracker_url::write(const string& v)
 {
 	clear();
 	size_t a;
 	int protocol;
 	int port;
-	if (boost::istarts_with(v, "http://"))
+	if (istarts_with(v, "http://"))
 	{
 		a = 7;
 		protocol = tp_http;
 		port = 80;
 	}
-	else if (boost::istarts_with(v, "udp://"))
+	else if (istarts_with(v, "udp://"))
 	{
 		a = 6;
 		protocol = tp_udp;
@@ -55,8 +57,8 @@ void Cbt_tracker_url::write(const std::string& v)
 	else
 		return;
 	size_t b = v.find_first_of("/:", a);
-	std::string host;
-	if (b == std::string::npos)
+	string host;
+	if (b == string::npos)
 		host = v.substr(a);
 	else
 	{
@@ -67,7 +69,7 @@ void Cbt_tracker_url::write(const std::string& v)
 		{
 			b++;
 			a = v.find('/', b);
-			if (a == std::string::npos)
+			if (a == string::npos)
 				port = atoi(v.substr(b).c_str());
 			else
 			{

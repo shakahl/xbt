@@ -29,6 +29,7 @@
  *
  */
 
+#include "stdafx.h"
 #include "sha1.h"
 
 /*
@@ -394,7 +395,7 @@ Csha1::Csha1()
 	SHA1Reset(&m_context);
 }
 
-Csha1::Csha1(data_ref s)
+Csha1::Csha1(const_memory_range s)
 {
 	SHA1Reset(&m_context);
 	write(s);
@@ -405,14 +406,14 @@ void Csha1::read(void* d)
 	SHA1Result(&m_context, reinterpret_cast<unsigned char*>(d));
 }
 
-std::string Csha1::read()
+string Csha1::read()
 {
 	char d[SHA1HashSize];
 	read(d);
-	return std::string(d, SHA1HashSize);
+	return string(d, SHA1HashSize);
 }
 
-void Csha1::write(data_ref s)
+void Csha1::write(const_memory_range s)
 {
-	SHA1Input(&m_context, s.data(), s.size());
+	SHA1Input(&m_context, s.begin(), s.size());
 }

@@ -1,8 +1,10 @@
+#include "stdafx.h"
 #include "epoll.h"
 
-#ifndef WIN32
-#include <unistd.h>
-#endif
+Cepoll::Cepoll()
+{
+	m_fd = -1;
+}
 
 Cepoll::~Cepoll()
 {
@@ -12,10 +14,10 @@ Cepoll::~Cepoll()
 #endif
 }
 
-int Cepoll::create()
+int Cepoll::create(int size)
 {
 #ifdef EPOLL
-	return m_fd = epoll_create(1);
+	m_fd = epoll_create(size);
 #else
 	return 0;
 #endif

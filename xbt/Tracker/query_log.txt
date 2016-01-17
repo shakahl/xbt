@@ -1,0 +1,2 @@
+select name, value from xbt_config where value is not null
+select id, ipa, port, event, info_hash, peer_id, useragent, downloaded, left0, uploaded, uid, mtime from xbt_announce_log where 0 = 1

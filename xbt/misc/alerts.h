@@ -1,4 +1,9 @@
+#if !defined(AFX_ALERTS_H__FE59568B_F1B9_45F4_9148_369A1454BC33__INCLUDED_)
+#define AFX_ALERTS_H__FE59568B_F1B9_45F4_9148_369A1454BC33__INCLUDED_
+
+#if _MSC_VER > 1000
 #pragma once
+#endif // _MSC_VER > 1000
 
 #include <ctime>
 #include <list>
@@ -29,24 +34,24 @@ public:
 		return m_level;
 	}
 
-	const std::string& message() const
+	const string& message() const
 	{
 		return m_message;
 	}
 
-	void message(const std::string& v)
+	void message(const string& v)
 	{
 		m_message = v;
 	}
 
-	Calert(t_level level, const std::string& message)
+	Calert(t_level level, const string& message)
 	{
 		m_time = ::time(NULL);
 		m_level = level;
 		m_message = message;
 	}
 
-	Calert(t_level level, const std::string& source, const std::string& message)
+	Calert(t_level level, const string& source, const string& message)
 	{
 		m_time = ::time(NULL);
 		m_level = level;
@@ -59,17 +64,19 @@ public:
 private:
 	time_t m_time;
 	t_level m_level;
-	std::string m_message;
-	std::string m_source;
+	string m_message;
+	string m_source;
 };
 
-class Calerts: public std::list<Calert>
+class Calerts: public list<Calert>
 {
 public:
 	void push_back(const value_type& v)
 	{
-		std::list<value_type>::push_back(v);
+		list<value_type>::push_back(v);
 		while (size() > 250)
 			erase(begin());
 	}
 };
+
+#endif // !defined(AFX_ALERTS_H__FE59568B_F1B9_45F4_9148_369A1454BC33__INCLUDED_)

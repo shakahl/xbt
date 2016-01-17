@@ -1,6 +1,11 @@
-#pragma once
+#if !defined(AFX_BT_TRACKER_ACCOUNT_H__D495C350_CA0C_4582_B420_B73A2BC105CC__INCLUDED_)
+#define AFX_BT_TRACKER_ACCOUNT_H__D495C350_CA0C_4582_B420_B73A2BC105CC__INCLUDED_
 
-#include <stream_writer.h>
+#if _MSC_VER > 1000
+#pragma once
+#endif // _MSC_VER > 1000
+
+#include "stream_writer.h"
 
 class Cbt_tracker_account
 {
@@ -8,32 +13,34 @@ public:
 	int pre_dump() const;
 	void dump(Cstream_writer&) const;
 	Cbt_tracker_account();
-	Cbt_tracker_account(const std::string& tracker, const std::string& user, const std::string& pass);
+	Cbt_tracker_account(const string& tracker, const string& user, const string& pass);
 
-	const std::string& tracker() const
+	const string& tracker() const
 	{
 		return m_tracker;
 	}
-
-	const std::string& user() const
+	
+	const string& user() const
 	{
 		return m_user;
 	}
-
-	const std::string& pass() const
+	
+	const string& pass() const
 	{
 		return m_pass;
-	}
+	}	
 private:
-	std::string m_tracker;
-	std::string m_user;
-	std::string m_pass;
+	string m_tracker;
+	string m_user;
+	string m_pass;
 };
 
-class Cbt_tracker_accounts: public std::list<Cbt_tracker_account>
+class Cbt_tracker_accounts: public list<Cbt_tracker_account>
 {
 public:
 	Cvirtual_binary dump() const;
-	const Cbt_tracker_account* find(const std::string&) const;
+	const Cbt_tracker_account* find(const string&) const;
 	void load(const Cvirtual_binary&);
 };
+
+#endif // !defined(AFX_BT_TRACKER_ACCOUNT_H__D495C350_CA0C_4582_B420_B73A2BC105CC__INCLUDED_)
