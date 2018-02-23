@@ -362,7 +362,7 @@ peer_id binary(20) not null,
 downloaded bigint unsigned not null,
 left0 bigint unsigned not null,
 uploaded bigint unsigned not null,
-int not null,
+uid int not null,
 mtime int not null,
 primary key (id)
 );
@@ -413,7 +413,7 @@ The xbt_config is where XBT keeps his configuration values. Please see the XBT C
 #### <a name="xbt_deny_from_clients"></a> **xbt_deny_from_clients**
 
 <pre class="brush: sql">create table if not exists xbt_deny_from_clients (
-peer_id char(20)notnull,
+peer_id char(20) not null
 );
 </pre>
 
