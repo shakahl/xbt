@@ -154,174 +154,195 @@ This section will try to describe the SQL tables that XBT uses.
 
 ```sql
 create table if not exists xbt_announce_log (
-id int not null auto_increment,
-ipa int unsigned not null,
-port int not null,
-event int not null,
-info_hash binary(20) not null,
-peer_id binary(20) not null,
-downloaded bigint unsigned not null,
-left0 bigint unsigned not null,
-uploaded bigint unsigned not null,
-int not null,
-mtime int not null,
-primary key (id)
+    id int not null auto_increment,
+    ipa int unsigned not null,
+    port int not null,
+    event int not null,
+    info_hash binary(20) not null,
+    peer_id binary(20) not null,
+    downloaded bigint unsigned not null,
+    left0 bigint unsigned not null,
+    uploaded bigint unsigned not null,
+    uid int not null,
+    mtime int not null,
+    primary key (id)
 );
 ```
 
 This table is used by the clients when they announce to the tracker. The fields are:
-- **id** - The record id. Each announce will generate an incremental record.
-- **ipa** - The client IP address.
-- **port** - The client source port. Usually defined in the client torrent program. This field can be used to check if the client is connectable or firewalled.
-- **event** - The torrent event. Can be Start [2], Stop [3], Completed [1] or None [0]
-- **info_hash** - The torrent hash identifier.
-- **peer_id** - The client identifier. In this we can see which program the client is using. See the peer id specifications in [theory.org](http://wiki.theory.org/BitTorrentSpecification#peer_id "Theory")
-- **downloaded** - How much has the client has downloaded.
-- **left0** - How much the client needs to complete the torrent (how much is left to download).
-- **uploaded** - How much has the client uploaded
-- **uid** - The user id (related to the xbt_users table)
-- **mtime** - The time (Unix timestamp) of the announce
+
+| Field           | Description                                                                                                                                                                                   |
+|:----------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **id**          | The record id. Each announce will generate an incremental record.                                                                                                                             |
+| **ipa**         | The client IP address.                                                                                                                                                                        |
+| **port**        | The client source port. Usually defined in the client torrent program. This field can be used to check if the client is connectable or firewalled.                                            |
+| **event**       | The torrent event. Can be Start [2], Stop [3], Completed [1] or None [0]                                                                                                                      |
+| **info_hash**   | The torrent hash identifier.                                                                                                                                                                  |
+| **peer_id**     | The client identifier. In this we can see which program the client is using. See the peer id specifications in [theory.org](http://wiki.theory.org/BitTorrentSpecification#peer_id "Theory")  |
+| **downloaded**  | How much has the client has downloaded.                                                                                                                                                       |
+| **left0**       | How much the client needs to complete the torrent (how much is left to download).                                                                                                             |
+| **uploaded**    | How much has the client uploaded                                                                                                                                                              |
+| **uid**         | The user id (related to the xbt_users table)                                                                                                                                                  |
+| **mtime**       | The time (Unix timestamp) of the announce                                                                                                                                                     |
 
 #### xbt_config
 
 ```sql
 create table if not exists xbt_config (
-name varchar(255) not null,
-value varchar(255) not null
+    name varchar(255) not null,
+    value varchar(255) not null
 );
 ```
 
 The xbt_config is where XBT keeps his configuration values. Please see the XBT Configuration page for more details about the available options. The fields are:
-- **name** - The name of the option.
-- **value** - The value of the option.
+| Field      | Description               |
+|:-----------|:--------------------------|
+| **name**   | The name of the option.   |
+| **value**  | The value of the option.  |
 
 #### xbt_deny_from_clients
 
 ```sql
 create table if not exists xbt_deny_from_clients (
-peer_id char(20)notnull,
+    peer_id char(20) not null
 );
 ```
 
 The xbt_deny_from_clients is where XBT checks for banned torrent clients. The fields are:
-- **peer_id** - The identification of the peer. You can check for a more detailed description of the clients in this [link](https://wiki.theory.org/BitTorrentSpecification#peer_id)
+
+| Field        | Description                                                                                                                                                           |
+|:-------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **peer_id**  | The identification of the peer. You can check for a more detailed description of the clients in this [link](https://wiki.theory.org/BitTorrentSpecification#peer_id)  |
 
 ####xbt_deny_from_hosts
 
 ```sql
 create table if not exists xbt_deny_from_hosts (
-begin int unsigned not null,
-end int unsigned not null
+    begin int unsigned not null,
+    end int unsigned not null
 );
 ```
 
 The xbt_deny_from_hosts is where XBT checks for banned IP's and/or networks. The fields are:
-- **begin** - The first IP address to be banned if specifying a network. The IP to be banned if specifying a host.
-- **end** - The last IP address to be banned if specifying a network. The same IP as in the begin field to be banned if specifying a host.
+
+| Field      | Description                                                                                                                     |
+|:-----------|:--------------------------------------------------------------------------------------------------------------------------------|
+| **begin**  | The first IP address to be banned if specifying a network. The IP to be banned if specifying a host.                            |
+| **end**    | The last IP address to be banned if specifying a network. The same IP as in the begin field to be banned if specifying a host.  |
 
 #### xbt_files
 
 ```sql
 create table if not exists xbt_files (
-fid int not null auto_increment,
-info_hash binary(20) not null,
-leechers int not null default 0,
-seeders int not null default 0,
-completed int not null default 0,
-flags int not null default 0,
-mtime int not null,
-ctime int not null,
-primary key (fid),
-unique key (info_hash)
+    fid int not null auto_increment,
+    info_hash binary(20) not null,
+    leechers int not null default 0,
+    seeders int not null default 0,
+    completed int not null default 0,
+    flags int not null default 0,
+    mtime int not null,
+    ctime int not null,
+    primary key (fid),
+    unique key (info_hash)
 );
 ```
 
 The xbt_files is where it's stored the information about the torrent files. The fields are:
-- **fid** - The torrent id (file id).
-- **info_hash** - The torrent identifier (torrent hash).
-- **leechers** - The current number of leechers for this torrent.
-- **seeders** - The current number of seeders for this torrent.
-- **completed** - The number of times the torrent was fully downloaded (completed download).
-- **flags** - This field is used to communicate with the tracker. **Usable values**: 0 - No changes. 1 - Torrent should be deleted. 2 - Torrent was updated.
-- **mtime** - Modification time (unix timestamp). Time of last seeders/leechers/completed status update (Updated by Tracker). - Thanks to rmlr for this tip
-- **ctime** - Creation time (unix timestamp). Timestamp from when the hash/torrent was added (Created by the frontend).- Thanks to rmlr for this tip
+
+| Field          | Description                                                                                                                                     |
+|:---------------|:------------------------------------------------------------------------------------------------------------------------------------------------|
+| **fid**        | The torrent id (file id).                                                                                                                       |
+| **info_hash**  | The torrent identifier (torrent hash).                                                                                                          |
+| **leechers**   | The current number of leechers for this torrent.                                                                                                |
+| **seeders**    | The current number of seeders for this torrent.                                                                                                 |
+| **completed**  | The number of times the torrent was fully downloaded (completed download).                                                                      |
+| **flags**      | This field is used to communicate with the tracker. **Usable values**: 0 - No changes. 1 - Torrent should be deleted. 2 - Torrent was updated.  |
+| **mtime**      | Modification time (unix timestamp). Time of last seeders/leechers/completed status update (Updated by Tracker). - Thanks to rmlr for this tip   |
+| **ctime**      | Creation time (unix timestamp). Timestamp from when the hash/torrent was added (Created by the frontend).- Thanks to rmlr for this tip          |
 
 #### xbt_files_users
 
 ```sql
 create table if not exists xbt_files_users (
-fid int not null,
-uid int not null,
-active tinyint not null,
-announced int not null,
-completed int not null,
-downloaded bigint unsigned not null,
-`left` bigint unsigned not null,
-uploaded bigint unsigned not null,
-mtime int not null,
-unique key (fid, uid),
-key (uid)
+    fid int not null,
+    uid int not null,
+    active tinyint not null,
+    announced int not null,
+    completed int not null,
+    downloaded bigint unsigned not null,
+    `left` bigint unsigned not null,
+    uploaded bigint unsigned not null,
+    mtime int not null,
+    unique key (fid, uid),
+    key (uid)
 );
 ```
 
 The xbt_files_users table is the "connection" between the torrent and the user. Each torrent that is downloaded or uploaded by a user will create a record here. The fields are:
 
-- **fid** - The torrent identifier (torrent id).
-- **uid** - The user identifier (user id).
-- **active** - 0 if the user is not active on this torrent. 1 if it's active.
-- **announced** - The number of times the user announced this torrent.
-- **completed** - 0 if the user hasn't completed the torrent. 1 if the user has completed (has downloaded the torrent completely)
-- **downloaded** - How many bytes has the user downloaded from this torrent.
-- **left** - How many bytes are left to download.
-- **uploaded** - How many bytes has the user uploaded for this torrent.
-- **mtime** - The last time (Unix timestamp) the record was updated (usually when the user announces the torrent)
+| Field           | Description                                                                                                      |
+|:----------------|:-----------------------------------------------------------------------------------------------------------------|
+| **fid**         | The torrent identifier (torrent id).                                                                             |
+| **uid**         | The user identifier (user id).                                                                                   |
+| **active**      | 0 if the user is not active on this torrent. 1 if it's active.                                                   |
+| **announced**   | The number of times the user announced this torrent.                                                             |
+| **completed**   | 0 if the user hasn't completed the torrent. 1 if the user has completed (has downloaded the torrent completely)  |
+| **downloaded**  | How many bytes has the user downloaded from this torrent.                                                        |
+| **left**        | How many bytes are left to download.                                                                             |
+| **uploaded**    | How many bytes has the user uploaded for this torrent.                                                           |
+| **mtime**       | The last time (Unix timestamp) the record was updated (usually when the user announces the torrent)              |
 
 #### xbt_scrape_log
 
 ```sql
-create table if not exists xbt_scrape_log (
-id int not null auto_increment,
-ipa int unsigned not null,
-info_hash binary(20),
-uid int not null,
-mtime int not null,
-primary key (id)
+    create table if not exists xbt_scrape_log (
+    id int not null auto_increment,
+    ipa int unsigned not null,
+    info_hash binary(20),
+    uid int not null,
+    mtime int not null,
+    primary key (id)
 );
 ```
 
 The xbt_scrape_log is used when the user scrapes the torrent. It's basically the same as the xbt_announce_log but for scrape. The fields are:
-- **id** - The record id. It's an auto incremental value for every record that is added to the table.
-- **ipa** - The user IP address.
-- **info_hash** - The torrent hash (torrent identifier).
-- **uid** - The user ID (user identifier).
-- **mtime** -  The last time (Unix timestamp) the torrent was scraped. Usually updated when the user scrapes.
+
+| Field          | Description                                                                                     |
+|:---------------|:------------------------------------------------------------------------------------------------|
+| **id**         | The record id. It's an auto incremental value for every record that is added to the table.      |
+| **ipa**        | The user IP address.                                                                            |
+| **info_hash**  | The torrent hash (torrent identifier).                                                          |
+| **uid**        | The user ID (user identifier).                                                                  |
+| **mtime**      | The last time (Unix timestamp) the torrent was scraped. Usually updated when the user scrapes.  |
 
 #### xbt_users
 
 ```sql
 create table if not exists xbt_users (
-uid int not null auto_increment,
-can_leech tinyint not null default 1,
-wait_time int not null default 0,
-peers_limit int not null default 0,
-torrents_limit int not null default 0,
-torrent_pass char(32) not null,
-torrent_pass_version int not null default 0,
-downloaded bigint unsigned not null default 0,
-uploaded bigint unsigned not null default 0,
-primary key (uid)
+    uid int not null auto_increment,
+    can_leech tinyint not null default 1,
+    wait_time int not null default 0,
+    peers_limit int not null default 0,
+    torrents_limit int not null default 0,
+    torrent_pass char(32) not null,
+    torrent_pass_version int not null default 0,
+    downloaded bigint unsigned not null default 0,
+    uploaded bigint unsigned not null default 0,
+    primary key (uid)
 );
 ```
 
-- **uid** - The user id (user identifier).The xbt_users is the user table. It keeps updated records for the users. The fields are:
-- **can_leech** - 0 if the user can't leech (download the files inside the torrent). 1 if the user can. _Optional field._
-- **wait_time** - The time the user must wait between the date of the torrent and the download. Value in seconds. The default is 0 (no wait time). _Optional field._
-- **peers_limit** - The number of different computers the user is allowed to use simultaneously. The default is 0 (unlimited). _Optional field._
-- **torrents_limit** - The number of simultaneous torrents the user is allowed to leech at the same time. The default is 0 (unlimited). _Optional field._
-- **torrent_pass** - A unique identifier for the user. Each torrent that the user downloads will have the torrent_pass in the announce URL. The user will have the same torrent_pass in every torrent he/she downloads. This is deprecated and replaced by the torrent_pass_version. _Optional field._
-- **torrent_pass_version** - The new unique identifier for the user. Each time a user downloads a torrent a new key is generated and added to the tracker announce URL (in the torrent). This value is also increased. This way each torrent will have it's own torrent_pass and can't be reused on other torrents.
-- **downloaded** - The value of downloaded bytes by the user. A sum of all the "download" values the user has in the xbt_files_users.
-- **uploaded** - The value of uploaded bytes by the user. A sum of all the "upload" values the user has in the xbt_files_users.
+| Field                     | Description                                                                                                                                                                                                                                                                             |
+|:--------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **uid**                   | The user id (user identifier).The xbt_users is the user table. It keeps updated records for the users. The fields are:                                                                                                                                                                  |
+| **can_leech**             | 0 if the user can't leech (download the files inside the torrent). 1 if the user can. _Optional field._                                                                                                                                                                                 |
+| **wait_time**             | The time the user must wait between the date of the torrent and the download. Value in seconds. The default is 0 (no wait time). _Optional field._                                                                                                                                      |
+| **peers_limit**           | The number of different computers the user is allowed to use simultaneously. The default is 0 (unlimited). _Optional field._                                                                                                                                                            |
+| **torrents_limit**        | The number of simultaneous torrents the user is allowed to leech at the same time. The default is 0 (unlimited). _Optional field._                                                                                                                                                      |
+| **torrent_pass**          | A unique identifier for the user. Each torrent that the user downloads will have the torrent_pass in the announce URL. The user will have the same torrent_pass in every torrent he/she downloads. This is deprecated and replaced by the torrent_pass_version. _Optional field._       |
+| **torrent_pass_version**  | The new unique identifier for the user. Each time a user downloads a torrent a new key is generated and added to the tracker announce URL (in the torrent). This value is also increased. This way each torrent will have it's own torrent_pass and can't be reused on other torrents.  |
+| **downloaded**            | The value of downloaded bytes by the user. A sum of all the "download" values the user has in the xbt_files_users.                                                                                                                                                                      |
+| **uploaded**              | The value of uploaded bytes by the user. A sum of all the "upload" values the user has in the xbt_files_users.                                                                                                                                                                          |
 
 Another changes in the xbt database are:
 
